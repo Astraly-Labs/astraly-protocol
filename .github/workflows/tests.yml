@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9.13
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9.13
+      - name: Update env variables
+        run: |
+          source /home/runner/.bashrc | bash
+      - name: Install dependencies
+        run: |
+          python3.9 -m pip install --upgrade pip
+          pip install poetry
+          if [ -f pyproject.toml ]; then poetry install; fi
+      - name: Test with pytest
+        run: |
+          poetry run pytest tests/
