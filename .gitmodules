@@ -1,0 +1,3 @@
+[submodule "fossil"]
+	url = https://github.com/OilerNetwork/fossil
+	path = lib/fossil
