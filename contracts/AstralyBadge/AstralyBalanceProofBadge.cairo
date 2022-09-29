@@ -9,6 +9,7 @@ from starkware.cairo.common.math import assert_not_zero, split_felt
 from starkware.starknet.common.syscalls import get_caller_address, get_tx_info, TxInfo
 from starkware.starknet.common.eth_utils import assert_valid_eth_address
 
+from contracts.AstralyBadge.base_SBT import name, symbol, balanceOf, ownerOf, transfer
 from lib.secp.bigint import BigInt3
 from lib.bytes_utils import IntArray
 from fossil.contracts.starknet.FactsRegistry import IL1HeadersStore, Keccak256Hash
@@ -23,7 +24,6 @@ from verify_proof import (
 from openzeppelin.token.erc721.library import ERC721
 
 from contracts.SBT.AstralyBalanceSBTContractFactory import IAstralySBTContractFactory
-from contracts.SBT.base_SBT import name, symbol, balanceOf, ownerOf, unequip
 
 @storage_var
 func block_number() -> (res: felt) {
