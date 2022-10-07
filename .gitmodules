@@ -1,3 +1,7 @@
-[submodule "fossil"]
-	url = https://github.com/OilerNetwork/fossil
-	path = lib/fossil
+[submodule "contracts/lib/herodotus"]
+	branch= "protostar"
+	path = contracts/lib/herodotus
+	url = https://github.com/HerodotusDev/herotodus-eth-starknet
+[submodule "herotodus_eth_starknet"]
+	path = lib/herotodus_eth_starknet
+	url = https://github.com/HerodotusDev/herotodus-eth-starknet
