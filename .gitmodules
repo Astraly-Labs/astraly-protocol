@@ -5,3 +5,6 @@
 [submodule "herotodus_eth_starknet"]
 	path = lib/herotodus_eth_starknet
 	url = https://github.com/HerodotusDev/herotodus-eth-starknet
+[submodule "cairo_contracts"]
+	path = lib/cairo_contracts
+	url = https://github.com/OpenZeppelin/cairo-contracts
