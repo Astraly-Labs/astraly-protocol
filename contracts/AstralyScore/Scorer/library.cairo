@@ -153,7 +153,7 @@ namespace internal {
         proofs_len: felt, proofs: felt*
     ) -> (score: felt) {
         let score = 0;
-        return (score);
+        return (score,);
     }
 
     func assert_not_caller{syscall_ptr: felt*}(address: felt) {

@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 
-from fossil.contracts.starknet.FactsRegistry import Keccak256Hash
+from lib.herodotus_eth_starknet.contracts.starknet.types import Keccak256Hash
 
 @storage_var
 func _state_roots(block_number: felt) -> (keccak: Keccak256Hash) {

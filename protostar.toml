@@ -1,0 +1,42 @@
+["protostar.config"]
+protostar_version = "0.5.0"
+
+["protostar.project"]
+libs_path = "lib"
+
+[profile.ci.protostar.shared_command_configs]
+no_color = true
+
+[profile.local.protostar.deploy]
+gateway_url = "http://127.0.0.1:5050/"
+feeder_gateway_url = "http://127.0.0.1:5050/"
+network = "alpha-goerli"
+network_opt = "--network alpha-goerli --gateway_url http://127.0.0.1:5050 --feeder_gateway_url http://127.0.0.1:5050"
+
+[profile.staging.protostar.deploy]
+network = "alpha-goerli"
+network_opt = "--network alpha-goerli"
+
+[profile.prod.protostar.deploy]
+network = "alpha-goerli"
+network_opt = "--network alpha-goerli"
+
+["protostar.shared_command_configs"]
+cairo_path = ["contracts", "lib/herodotus_eth_starknet/src", "lib/cairo_contracts/src"]
+
+["protostar.test"]
+target = ["contracts"]
+
+["protostar.contracts"]
+badge = [
+    "./contracts/AstralyBadge/AstralyBalanceProofBadge.cairo",
+]
+badge_factory = [
+    "./contracts/AstralyBadge/AstralyBalanceSBTContractFactory.cairo"
+]
+scorer = [
+    "./contracts/AstralyScore/Scorer/Scorer.cairo"
+]
+scorer_factory = [
+    "./contracts/AstralyScore/ScorerFactory/ScorerFactory.cairo"
+]

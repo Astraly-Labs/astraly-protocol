@@ -23,7 +23,8 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 func get_score{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     account: felt, proofs_len: felt, proofs: felt*
 ) -> (score: felt) {
-    return scorer.get_score(account, proofs_len, proofs);
+    let (score) = scorer.get_score(account, proofs_len, proofs);
+    return (score=score);
 }
 
 //

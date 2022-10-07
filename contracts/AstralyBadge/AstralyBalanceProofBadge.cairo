@@ -7,12 +7,13 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.bool import FALSE
 from starkware.cairo.common.math import assert_not_zero, split_felt
 from starkware.starknet.common.syscalls import get_caller_address, get_tx_info, TxInfo
-from starkware.starknet.common.eth_utils import assert_valid_eth_address
+from starkware.starknet.common.eth_utils import assert_eth_address_range
 
 from contracts.AstralyBadge.base_SBT import name, symbol, balanceOf, ownerOf, transfer
-from lib.secp.bigint import BigInt3
-from lib.bytes_utils import IntArray
-from fossil.contracts.starknet.FactsRegistry import IL1HeadersStore, Keccak256Hash
+from contracts.lib.secp.bigint import BigInt3
+from contracts.lib.bytes_utils import IntArray
+from contracts.lib.herodotus.src.FactsRegistry import IL1HeadersStore
+from contracts.lib.herodotus.src.types import Keccak256Hash
 from verify_proof import (
     Proof,
     encode_proof,
@@ -63,7 +64,7 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 
     block_number.write(_block_number);
     min_balance.write(_balance);
-    assert_valid_eth_address(_token_address);
+    assert_eth_address_range(_token_address);
     token_address.write(_token_address);
 
     ERC721.initializer('AstralyBalanceProofBadge', 'A-BPB');
