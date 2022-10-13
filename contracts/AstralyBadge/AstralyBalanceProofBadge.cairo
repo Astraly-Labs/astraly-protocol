@@ -12,9 +12,9 @@ from starkware.starknet.common.eth_utils import assert_eth_address_range
 from contracts.AstralyBadge.base_SBT import name, symbol, balanceOf, ownerOf, transfer
 from contracts.lib.secp.bigint import BigInt3
 from contracts.lib.bytes_utils import IntArray
-from contracts.lib.herodotus.src.FactsRegistry import IL1HeadersStore
-from contracts.lib.herodotus.src.types import Keccak256Hash
-from verify_proof import (
+from lib.herodotus_eth_starknet.src.FactsRegistry import IL1HeadersStore
+from lib.herodotus_eth_starknet.src.types import Keccak256Hash
+from contracts.lib.verify_proof import (
     Proof,
     encode_proof,
     verify_storage_proof,
@@ -24,7 +24,7 @@ from verify_proof import (
 )
 from openzeppelin.token.erc721.library import ERC721
 
-from contracts.SBT.AstralyBalanceSBTContractFactory import IAstralySBTContractFactory
+from contracts.AstralyBadge.AstralyBalanceSBTContractFactory import IAstralySBTContractFactory
 
 @storage_var
 func block_number() -> (res: felt) {

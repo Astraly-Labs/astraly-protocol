@@ -22,7 +22,7 @@ network = "alpha-goerli"
 network_opt = "--network alpha-goerli"
 
 ["protostar.shared_command_configs"]
-cairo_path = ["contracts", "lib/herodotus_eth_starknet/src", "lib/cairo_contracts/src"]
+cairo_path = ["contracts", "lib/cairo_contracts/src"]
 
 ["protostar.test"]
 target = ["contracts"]
