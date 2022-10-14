@@ -6,6 +6,7 @@ libs_path = "lib"
 
 [profile.ci.protostar.shared_command_configs]
 no_color = true
+cairo-path = ["./lib/cairo_contracts/src", "./lib/herodotus_eth_starknet"]
 
 [profile.local.protostar.deploy]
 gateway_url = "http://127.0.0.1:5050/"

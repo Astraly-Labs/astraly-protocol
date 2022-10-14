@@ -7,17 +7,17 @@
 // %builtins range_check bitwise
 
 // Keccak code from https://github.com/starkware-libs/cairo-examples/tree/master/keccak
-from starkware.cairo.common.cairo_keccak.keccak import keccak, finalize_keccak
+from contracts.lib.keccak import keccak, finalize_keccak
+from contracts.lib.storage_verification.keccak import keccak256
 from contracts.lib.bytes_utils import IntArray, swap_endian
 
 // Storage verification code from https://github.com/OilerNetwork/fossil
-from lib.herodotus_eth_starknet.starknet.lib.unsafe_keccak import keccak256
-from lib.herodotus_eth_starknet.starknet.lib.trie_proofs import verify_proof
-from lib.herodotus_eth_starknet.starknet.lib.extract_from_rlp import extract_data
-from lib.herodotus_eth_starknet.starknet.types import IntsSequence, reconstruct_ints_sequence_list
-from lib.herodotus_eth_starknet.starknet.lib.swap_endianness import swap_endianness_four_words
-from lib.herodotus_eth_starknet.starknet.lib.comp_arr import arr_eq
-from lib.herodotus_eth_starknet.starknet.lib.concat_arr import concat_arr
+from starknet.lib.trie_proofs import verify_proof
+from starknet.lib.extract_from_rlp import extract_data
+from starknet.types import IntsSequence, reconstruct_ints_sequence_list
+from starknet.lib.swap_endianness import swap_endianness_four_words
+from starknet.lib.comp_arr import arr_eq
+from starknet.lib.concat_arr import concat_arr
 
 // Secp code modified from https://github.com/starkware-libs/cairo-examples/tree/master/secp
 from contracts.lib.secp.secp import ecdsa_raw_recover
@@ -88,7 +88,6 @@ func keccak256_20{range_check_ptr, bitwise_ptr: BitwiseBuiltin*}(input_ptr: felt
     let (trie_key_be) = swap_endianness_four_words(IntsSequence(trie_key_le, 4, 32));
     return (trie_key_be.element,);
 }
-
 // # Integer manipulation
 
 func split{range_check_ptr}(a: Uint256) -> (res: BigInt3) {

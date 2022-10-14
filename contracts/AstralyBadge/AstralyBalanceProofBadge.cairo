@@ -6,13 +6,12 @@ from starkware.cairo.common.math import assert_le
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.bool import FALSE
 from starkware.cairo.common.math import assert_not_zero, split_felt
-from starkware.starknet.common.syscalls import get_caller_address, get_tx_info, TxInfo
+from starkware.starknet.common.syscalls import get_caller_address
 from starkware.starknet.common.eth_utils import assert_eth_address_range
 
 from contracts.AstralyBadge.base_SBT import name, symbol, balanceOf, ownerOf, transfer
 from contracts.lib.secp.bigint import BigInt3
 from contracts.lib.bytes_utils import IntArray
-from lib.herodotus_eth_starknet.src.FactsRegistry import IL1HeadersStore
 from lib.herodotus_eth_starknet.src.types import Keccak256Hash
 from contracts.lib.verify_proof import (
     Proof,
@@ -25,6 +24,14 @@ from contracts.lib.verify_proof import (
 from openzeppelin.token.erc721.library import ERC721
 
 from contracts.AstralyBadge.AstralyBalanceSBTContractFactory import IAstralySBTContractFactory
+
+
+@contract_interface
+namespace IL1HeadersStore {
+    func get_state_root(block_number: felt) -> (res: Keccak256Hash) {
+    }
+}
+
 
 @storage_var
 func block_number() -> (res: felt) {
@@ -202,7 +209,7 @@ func mint{
 
     // Write new badge entry in map
     let (eth_account) = int_array_to_felt(ethereum_address.elements, 4);
-    assert_valid_eth_address(eth_account);
+    assert_eth_address_range(eth_account);
 
     let (caller: felt) = get_caller_address();
 
