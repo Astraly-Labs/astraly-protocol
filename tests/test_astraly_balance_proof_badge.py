@@ -241,3 +241,5 @@ async def test_proof(contracts_factory, contract_defs):
                                             [*args])
 
     assert_event_exist(receipt, "Transfer")
+
+    assert from_uint((await balance_proof_badge_contract.balanceOf(prover_account.contract_address).call()).result.balance) > 0
