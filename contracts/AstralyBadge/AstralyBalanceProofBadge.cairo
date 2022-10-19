@@ -25,13 +25,11 @@ from openzeppelin.token.erc721.library import ERC721
 
 from contracts.AstralyBadge.AstralyBalanceSBTContractFactory import IAstralySBTContractFactory
 
-
 @contract_interface
 namespace IL1HeadersStore {
     func get_state_root(block_number: felt) -> (res: Keccak256Hash) {
     }
 }
-
 
 @storage_var
 func block_number() -> (res: felt) {
