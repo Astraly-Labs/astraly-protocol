@@ -3,8 +3,8 @@ from math import ceil
 
 import sympy
 from web3 import Web3
+from web3.types import BlockData, MerkleProof
 from eth_account.messages import encode_defunct
-
 from pubkey_recovery import recover
 
 
@@ -19,27 +19,19 @@ def pack_intarray(hex_input: str):
     return elements
 
 
-def generate_proof(address, private_key, starknet_attestation_wallet, rpc_http, storage_slot,
-                   erc20_token, block_number):
-    w3 = Web3(Web3.HTTPProvider(rpc_http))
+def generate_proof(address, private_key, starknet_attestation_wallet, rpc_node, storage_slot,
+                   erc20_token, block_number: int):
+    w3 = Web3(Web3.HTTPProvider(rpc_node))
 
     # Create storage proof for an ERC20 balance at a particular block number
     slot = storage_slot[2:].rjust(64, '0')
     key = address[2:].rjust(64, '0').lower()
     position = w3.keccak(hexstr=key + slot)
 
-    try:
-        block = json.loads(open(f'block_{block_number}_{block_number}.json'))
-    except:
-        block = w3.eth.get_block(block_number)
-        json.dump(Web3.toJSON(block), open(f'block_{block_number}_{block_number}.json', "w"), indent=4)
+    block: BlockData = w3.eth.get_block(block_number)
 
-    try:
-        proof = json.loads(open(f'proof_{erc20_token}_{block_number}_{Web3.toHex(position)}.json'))
-    except:
-        proof = w3.eth.get_proof(erc20_token, [position], block_number)
-        json.dump(Web3.toJSON(proof), open(f'proof_{erc20_token}_{block_number}_{Web3.toHex(position)}.json', "w"),
-                  indent=4)
+    proof: MerkleProof = w3.eth.get_proof(
+        erc20_token, [position], block_number)
     balance = Web3.toInt(w3.eth.get_storage_at(erc20_token, position))
     print("Generating proof of balance", balance)
 
@@ -51,11 +43,13 @@ def generate_proof(address, private_key, starknet_attestation_wallet, rpc_http, 
         state_root[2:],
         storage_key)
     message = encode_defunct(hexstr=msg)
-    signed_message = w3.eth.account.sign_message(message, private_key=private_key)
+    signed_message = w3.eth.account.sign_message(
+        message, private_key=private_key)
     eip191_message = b'\x19' + message.version + message.header + message.body
     P = 2 ** 256 - 4294968273
     R_x = signed_message.r
-    R_y = min(sympy.ntheory.residue_ntheory.sqrt_mod(R_x ** 3 + 7, P, all_roots=True))
+    R_y = min(sympy.ntheory.residue_ntheory.sqrt_mod(
+        R_x ** 3 + 7, P, all_roots=True))
 
     # Serialize proof to disk
     proof_dict = json.loads(Web3.toJSON(proof))

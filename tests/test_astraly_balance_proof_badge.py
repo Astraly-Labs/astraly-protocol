@@ -1,21 +1,21 @@
-from typing import NamedTuple, List, Callable, Tuple
 
 import pytest
 import pytest_asyncio
 
+from web3 import Web3
 from dotenv import load_dotenv
 from datetime import datetime
+from typing import NamedTuple, List, Callable, Tuple
 
 from starkware.starknet.services.api.contract_class import ContractClass
 from starkware.starknet.testing.state import StarknetState
+from starkware.starknet.testing.starknet import Starknet
+from starkware.cairo.common.cairo_secp.secp_utils import split
+from starkware.starknet.public.abi import get_selector_from_name
 
 from signers import MockSigner
 from utils import *
 from generate_proof_balance import generate_proof, pack_intarray
-
-from starkware.starknet.testing.starknet import Starknet
-from starkware.cairo.common.cairo_secp.secp_utils import split
-from starkware.starknet.public.abi import get_selector_from_name
 
 account_path = 'openzeppelin/account/presets/Account.cairo'
 sbt_contract_factory_path = 'AstralyBadge/AstralyBalanceSBTContractFactory.cairo'
@@ -109,13 +109,14 @@ async def test_proof(contracts_factory, contract_defs):
     prover_account, sbt_contract_factory, mock_L1_headers_store_cached, starknet_state = contracts_factory
     _, _, balance_proof_badge_def, _ = contract_defs
 
+    rpc_node = "https://eth-goerli.g.alchemy.com/v2/n3G9TIK721_ftIFS9DVDyUWupN1ptpS1"
     LINK_token_address = "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"
-    block_number = 7486880
+    w3 = Web3(Web3.HTTPProvider(rpc_node))
+    block_number = w3.eth.get_block_number()
     min_balance = 1
 
     ethereum_address = "0x4Db4bB41758F10D97beC54155Fdb59b879207F92"
     ethereum_pk = "eb5a6c2a9e46618a92b40f384dd9e076480f1b171eb21726aae34dc8f22fe83f"
-    rpc_node = "https://eth-goerli.g.alchemy.com/v2/uXpxHR8fJBH3fjLJpulhY__jXbTGNjN7"
     storage_slot = hex(1)
     proof = generate_proof(ethereum_address, ethereum_pk, hex(prover_account.contract_address), rpc_node, storage_slot,
                            LINK_token_address, block_number)

@@ -56,7 +56,6 @@ def contracts_factory(contract_defs: Tuple[ContractClass, ...], contacts_init: T
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_scorer(contracts_factory):
     deployer_account, scorer_contract, _ = contracts_factory
-
-    t = 0
