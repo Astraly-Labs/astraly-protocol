@@ -1,30 +1,18 @@
-from datetime import datetime
-from math import ceil
-
 import pytest
 import pytest_asyncio
 
-from signers import MockSigner
 from utils import *
-import asyncio
 from generate_proof_balance import generate_proof, pack_intarray
 
 from starkware.starknet.testing.starknet import Starknet
+from signers import MockSigner
+
 
 account_path = 'openzeppelin/account/presets/Account.cairo'
-sbt_contract_factory_path = 'SBT/AstralyBalanceSBTContractFactory.cairo'
-balance_proof_badge_path = 'SBT/AstralyBalanceProofBadge.cairo'
+sbt_contract_factory_path = 'AstralyBadge/AstralyBalanceSBTContractFactory.cairo'
+balance_proof_badge_path = 'AstralyBadge/AstralyBalanceProofBadge.cairo'
 
 prover = MockSigner(1234321)
-
-
-@pytest_asyncio.fixture(scope='module')
-async def get_starknet():
-    starknet = await Starknet.empty()
-    set_block_timestamp(starknet.state, int(
-        datetime.today().timestamp()))  # time.time()
-    set_block_number(starknet.state, 1)
-    return starknet
 
 
 @pytest.fixture(scope='module')
@@ -54,7 +42,7 @@ async def contacts_init(contract_defs, get_starknet):
     balance_proof_class_hash = await starknet.declare(contract_class=balance_proof_badge_def)
 
     await prover.send_transaction(prover_account, sbt_contract_factory.contract_address, "initializer",
-                                  [balance_proof_class_hash.class_hash, prover_account.contract_address])
+                                  [balance_proof_class_hash.class_hash, prover_account.contract_address, 1])
 
     return prover_account, sbt_contract_factory
 
@@ -87,8 +75,8 @@ async def test_proof(contracts_factory, contract_defs):
                                                                    "createSBTContract",
                                                                    [block_number, min_balance, int(erc20_token, 16)])
 
-    balance_proof_badge_contract = StarknetContract(starknet_state, sbt_contract_factory.abi,
-                                                    create_sbt_transaction_receipt.result.response[0], None)
+    balance_proof_badge_contract = StarknetContract(starknet_state, balance_proof_badge_def.abi,
+                                                    create_sbt_transaction_receipt.call_info.internal_calls[0].retdata[0], None)
 
     ethereum_address = "0x4Db4bB41758F10D97beC54155Fdb59b879207F92"
     ethereum_pk = "eb5a6c2a9e46618a92b40f384dd9e076480f1b171eb21726aae34dc8f22fe83f"
@@ -100,7 +88,7 @@ async def test_proof(contracts_factory, contract_defs):
 
     args = list()
     args.append(prover_account.contract_address)
-    args.append(proof['storage_value']) # token balance
+    args.append(proof['storage_value'])  # token balance
     args.append(proof['balance'])
     args.append(proof['nonce'])
     args.append(starknet_state.general_config.chain_id.value)
@@ -161,7 +149,6 @@ async def test_proof(contracts_factory, contract_defs):
     args.append(0)
     args.append(0)
     args.append(0)
-
 
     receipt = await prover.send_transaction(prover_account, balance_proof_badge_contract.contract_address, "mint",
                                             [*args])

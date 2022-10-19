@@ -1,8 +1,8 @@
 """Utilities for testing Cairo contracts."""
+from nile.signer import Signer, from_call_to_call_array, get_transaction_hash
 from collections import namedtuple
 from pathlib import Path
 import math
-import asyncio
 from starkware.cairo.common.hash_state import compute_hash_on_elements
 from starkware.crypto.signature.signature import private_to_stark_key, sign
 from starkware.starknet.business_logic.state.state import BlockInfo
@@ -12,8 +12,8 @@ from starkware.starkware_utils.error_handling import StarkException
 from starkware.starknet.testing.starknet import StarknetContract, Starknet
 from starkware.starknet.business_logic.execution.objects import Event
 from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
+from starkware.starknet.business_logic.execution.objects import OrderedEvent, CallInfo, TransactionExecutionInfo
 
-from nile.signer import Signer, from_call_to_call_array, get_transaction_hash
 
 MAX_UINT256 = (2 ** 128 - 1, 2 ** 128 - 1)
 INVALID_UINT256 = (MAX_UINT256[0] + 1, MAX_UINT256[1])
@@ -47,12 +47,45 @@ def felt_to_str(felt):
     return b_felt.decode()
 
 
-def assert_event_emitted(tx_exec_info, from_address, name, data):
-    assert Event(
-        from_address=from_address,
-        keys=[get_selector_from_name(name)],
-        data=data,
-    ) in tx_exec_info.raw_events
+def assert_event_exist(tx_info: TransactionExecutionInfo, event_name: str):
+    event_selector = get_selector_from_name(event_name)
+
+    for internal_call in tx_info.call_info.internal_calls:
+        event_found = [event_selector] in (
+            obj.keys for obj in internal_call.events)
+        if event_found is True:
+            return
+
+    raise BaseException("Event not fired or not fired correctly")
+
+
+def assert_event_emitted(tx_exec_info, from_address, name, data, order=0):
+    """Assert one single event is fired with correct data."""
+    assert_events_emitted(tx_exec_info, [(order, from_address, name, data)])
+
+
+def assert_events_emitted(tx_exec_info, events):
+    """Assert events are fired with correct data."""
+    for event in events:
+        order, from_address, name, data = event
+        event_obj = OrderedEvent(
+            order=order,
+            keys=[get_selector_from_name(name)],
+            data=data,
+        )
+
+        base = tx_exec_info.call_info.internal_calls[0]
+        if event_obj in base.events and from_address == base.contract_address:
+            return
+
+        try:
+            base2 = base.internal_calls[0]
+            if event_obj in base2.events and from_address == base2.contract_address:
+                return
+        except IndexError:
+            pass
+
+        raise BaseException("Event not fired or not fired correctly")
 
 
 def get_contract_class(path):
@@ -138,20 +171,19 @@ def get_contract_def(path, disable_hint_validation: bool = False):
         debug_info=True,
         disable_hint_validation=disable_hint_validation,
         cairo_path=[str(_root / "lib/cairo_contracts/src"),
-                    str(_root / "lib/starknet_attestations"),
-                    str(_root / "lib/fossil/contracts"),
+                    str(_root / "lib/herodotus_eth_starknet"),
                     str(_root / "lib")]
     )
     return contract_def
 
 
-def cached_contract(state, definition, deployed):
-    """Returns the cached contract"""
+def cached_contract(state, _class, deployed):
+    """Return the cached contract"""
     contract = StarknetContract(
         state=state,
-        abi=definition.abi,
+        abi=_class.abi,
         contract_address=deployed.contract_address,
-        deploy_execution_info=deployed.deploy_execution_info
+        deploy_call_info=deployed.deploy_call_info
     )
     return contract
 

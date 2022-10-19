@@ -18,8 +18,8 @@ from starkware.cairo.common.cairo_secp.secp_utils import split
 from starkware.starknet.public.abi import get_selector_from_name
 
 account_path = 'openzeppelin/account/presets/Account.cairo'
-sbt_contract_factory_path = 'SBT/AstralyBalanceSBTContractFactory.cairo'
-balance_proof_badge_path = 'SBT/AstralyBalanceProofBadge.cairo'
+sbt_contract_factory_path = 'AstralyBadge/AstralyBalanceSBTContractFactory.cairo'
+balance_proof_badge_path = 'AstralyBadge/AstralyBalanceProofBadge.cairo'
 mock_L1_headers_store_path = 'mocks/mock_L1_Headers_Store.cairo'
 
 prover = MockSigner(1234321)
@@ -53,7 +53,7 @@ def contract_defs() -> Tuple[ContractClass, ContractClass, ContractClass, Contra
 
 @pytest_asyncio.fixture(scope='module')
 async def contacts_init(contract_defs, get_starknet: Starknet) -> Tuple[
-    StarknetContract, StarknetContract, StarknetContract]:
+        StarknetContract, StarknetContract, StarknetContract]:
     starknet = get_starknet
     account_def, sbt_contract_factory_def, balance_proof_badge_def, mock_L1_headers_store_def = contract_defs
     await starknet.declare(contract_class=account_def)
@@ -89,7 +89,7 @@ async def contacts_init(contract_defs, get_starknet: Starknet) -> Tuple[
 
 @pytest.fixture
 def contracts_factory(contract_defs, contacts_init, get_starknet: Starknet) -> Tuple[
-    StarknetContract, StarknetContract, StarknetContract, StarknetState]:
+        StarknetContract, StarknetContract, StarknetContract, StarknetState]:
     account_def, sbt_contract_factory_def, _, mock_L1_headers_store_def = contract_defs
     prover_account, sbt_contract_factory, mock_L1_headers_store = contacts_init
     _state = get_starknet.state.copy()
@@ -102,25 +102,6 @@ def contracts_factory(contract_defs, contacts_init, get_starknet: Starknet) -> T
         _state, mock_L1_headers_store_def, mock_L1_headers_store)
 
     return prover_cached, sbt_contract_factory_cached, mock_L1_headers_store_cached, _state
-
-
-@pytest.mark.asyncio
-async def test_create_sbt_contract_function(contracts_factory, contract_defs):
-    prover_account, sbt_contract_factory, _, starknet_state = contracts_factory
-    _, _, balance_proof_badge_def, _ = contract_defs
-    erc20_token = "0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72"
-    block_number = 7415645
-    min_balance = 1
-    create_sbt_transaction_receipt = await prover.send_transaction(prover_account,
-                                                                   sbt_contract_factory.contract_address,
-                                                                   "createSBTContract",
-                                                                   [block_number, min_balance, int(erc20_token, 16)])
-
-    balance_proof_badge_contract = StarknetContract(starknet_state, balance_proof_badge_def.abi,
-                                                    create_sbt_transaction_receipt.result.response[0], None)
-
-    assert min_balance == (await balance_proof_badge_contract.minBalance().call()).result.min
-    assert int(erc20_token, 16) == (await balance_proof_badge_contract.tokenAddress().call()).result.address
 
 
 @pytest.mark.asyncio
@@ -250,11 +231,12 @@ async def test_proof(contracts_factory, contract_defs):
                                                                     int(LINK_token_address, 16)])
 
     balance_proof_badge_contract = StarknetContract(starknet_state, balance_proof_badge_def.abi,
-                                                    create_sbt_transaction_receipt.result.response[0], None)
+                                                    create_sbt_transaction_receipt.call_info.internal_calls[0].retdata[0], None)
+
+    assert min_balance == (await balance_proof_badge_contract.minBalance().call()).result.min
+    assert int(LINK_token_address, 16) == (await balance_proof_badge_contract.tokenAddress().call()).result.address
 
     receipt = await prover.send_transaction(prover_account, balance_proof_badge_contract.contract_address, "mint",
                                             [*args])
 
-    event_signature = get_selector_from_name("Transfer")
-    assert next(
-        (x for x in receipt.raw_events if event_signature in x.keys), None) is not None
+    assert_event_exist(receipt, "Transfer")
