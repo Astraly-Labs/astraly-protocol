@@ -31,6 +31,12 @@ namespace IL1HeadersStore {
     }
 }
 
+@contract_interface
+namespace IFactRegistry {
+    func get_l1_headers_store_addr() -> (res: felt) {
+    }
+}
+
 @storage_var
 func block_number() -> (res: felt) {
 }
@@ -55,8 +61,12 @@ func _state_root() -> (keccak: Keccak256Hash) {
 func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     _block_number: felt, _balance: felt, _token_address: felt, _fossil_fact_registry_address: felt
 ) {
+    let (headers_store_address) = IFactRegistry.get_l1_headers_store_addr(
+        _fossil_fact_registry_address
+    );
+
     let (fossil_stored_state_root: Keccak256Hash) = IL1HeadersStore.get_state_root(
-        _fossil_fact_registry_address, _block_number
+        headers_store_address, _block_number
     );
 
     with_attr error_message("No state root hash available for this block number") {
