@@ -21,6 +21,7 @@ account_path = 'openzeppelin/account/presets/Account.cairo'
 sbt_contract_factory_path = 'AstralyBadge/AstralyBalanceSBTContractFactory.cairo'
 balance_proof_badge_path = 'AstralyBadge/AstralyBalanceProofBadge.cairo'
 mock_L1_headers_store_path = 'mocks/mock_L1_Headers_Store.cairo'
+mock_Fact_Registry_path = 'mocks/mock_Fact_Registry.cairo'
 
 prover = MockSigner(1234321)
 
@@ -40,7 +41,7 @@ async def get_starknet() -> Starknet:
 
 
 @pytest.fixture(scope='module')
-def contract_defs() -> Tuple[ContractClass, ContractClass, ContractClass, ContractClass]:
+def contract_defs() -> Tuple[ContractClass, ContractClass, ContractClass, ContractClass, ContractClass]:
     account_def = get_contract_def(account_path)
     sbt_contract_factory_def = get_contract_def(
         sbt_contract_factory_path, disable_hint_validation=True)
@@ -48,14 +49,16 @@ def contract_defs() -> Tuple[ContractClass, ContractClass, ContractClass, Contra
         balance_proof_badge_path, disable_hint_validation=True)
     mock_L1_headers_store_def = get_contract_def(
         mock_L1_headers_store_path, disable_hint_validation=True)
-    return account_def, sbt_contract_factory_def, balance_proof_badge_def, mock_L1_headers_store_def
+    mock_Fact_Registry_def = get_contract_def(
+        mock_Fact_Registry_path, disable_hint_validation=True)
+    return account_def, sbt_contract_factory_def, balance_proof_badge_def, mock_L1_headers_store_def, mock_Fact_Registry_def
 
 
 @pytest_asyncio.fixture(scope='module')
 async def contacts_init(contract_defs, get_starknet: Starknet) -> Tuple[
-        StarknetContract, StarknetContract, StarknetContract]:
+        StarknetContract, StarknetContract, StarknetContract, StarknetContract]:
     starknet = get_starknet
-    account_def, sbt_contract_factory_def, balance_proof_badge_def, mock_L1_headers_store_def = contract_defs
+    account_def, sbt_contract_factory_def, balance_proof_badge_def, mock_L1_headers_store_def, mock_Fact_Registry_def = contract_defs
     await starknet.declare(contract_class=account_def)
     prover_account = await starknet.deploy(
         contract_class=account_def,
@@ -78,20 +81,31 @@ async def contacts_init(contract_defs, get_starknet: Starknet) -> Tuple[
         disable_hint_validation=True
     )
 
+    await starknet.declare(contract_class=mock_Fact_Registry_def)
+    mock_Fact_Registry = await starknet.deploy(
+        contract_class=mock_Fact_Registry_def,
+        constructor_calldata=[],
+        disable_hint_validation=True
+    )
+    await prover.send_transaction(prover_account, mock_Fact_Registry.contract_address, "set_l1_headers_store_addr", [mock_L1_headers_store.contract_address])
+
     balance_proof_class_hash = await starknet.declare(contract_class=balance_proof_badge_def)
 
     await prover.send_transaction(prover_account, sbt_contract_factory.contract_address, "initializer",
                                   [balance_proof_class_hash.class_hash, prover_account.contract_address,
                                    mock_L1_headers_store.contract_address])
 
-    return prover_account, sbt_contract_factory, mock_L1_headers_store
+    await prover.send_transaction(prover_account, sbt_contract_factory.contract_address, "setFossilFactsRegistryAddress",
+                                  [mock_Fact_Registry.contract_address])
+
+    return prover_account, sbt_contract_factory, mock_L1_headers_store, mock_Fact_Registry
 
 
 @pytest.fixture
 def contracts_factory(contract_defs, contacts_init, get_starknet: Starknet) -> Tuple[
-        StarknetContract, StarknetContract, StarknetContract, StarknetState]:
-    account_def, sbt_contract_factory_def, _, mock_L1_headers_store_def = contract_defs
-    prover_account, sbt_contract_factory, mock_L1_headers_store = contacts_init
+        StarknetContract, StarknetContract, StarknetContract, StarknetContract, StarknetState]:
+    account_def, sbt_contract_factory_def, _, mock_L1_headers_store_def, mock_Fact_Registry_def = contract_defs
+    prover_account, sbt_contract_factory, mock_L1_headers_store, mock_Fact_Registry = contacts_init
     _state = get_starknet.state.copy()
 
     prover_cached = cached_contract(
@@ -100,19 +114,21 @@ def contracts_factory(contract_defs, contacts_init, get_starknet: Starknet) -> T
         _state, sbt_contract_factory_def, sbt_contract_factory)
     mock_L1_headers_store_cached = cached_contract(
         _state, mock_L1_headers_store_def, mock_L1_headers_store)
+    mock_Fact_Registry_cached = cached_contract(
+        _state, mock_Fact_Registry_def, mock_Fact_Registry)
 
-    return prover_cached, sbt_contract_factory_cached, mock_L1_headers_store_cached, _state
+    return prover_cached, sbt_contract_factory_cached, mock_L1_headers_store_cached, mock_Fact_Registry_cached, _state
 
 
 @pytest.mark.asyncio
 async def test_proof(contracts_factory, contract_defs):
-    prover_account, sbt_contract_factory, mock_L1_headers_store_cached, starknet_state = contracts_factory
-    _, _, balance_proof_badge_def, _ = contract_defs
+    prover_account, sbt_contract_factory, mock_L1_headers_store_cached, mock_Fact_Registry, starknet_state = contracts_factory
+    _, _, balance_proof_badge_def, _, _ = contract_defs
 
     rpc_node = "https://eth-goerli.g.alchemy.com/v2/n3G9TIK721_ftIFS9DVDyUWupN1ptpS1"
     LINK_token_address = "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"
     w3 = Web3(Web3.HTTPProvider(rpc_node))
-    block_number = w3.eth.get_block_number()
+    block_number = 7837994
     min_balance = 1
 
     ethereum_address = "0x4Db4bB41758F10D97beC54155Fdb59b879207F92"
