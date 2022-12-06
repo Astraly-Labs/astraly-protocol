@@ -10,6 +10,7 @@ from starkware.cairo.common.signature import verify_ecdsa_signature
 from starkware.cairo.common.math import assert_le_felt
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.hash import hash2
+from openzeppelin.access.ownable.library import Ownable
 
 @view
 func name{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (name: felt) {
@@ -37,6 +38,14 @@ func ownerOf{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(to
 ) {
     let (owner: felt) = ERC721.owner_of(tokenId);
     return (owner,);
+}
+
+@view
+func tokenURI{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    token_id: Uint256
+) -> (token_uri: felt) {
+    let token_uri = ERC721.token_uri(token_id);
+    return (token_uri);
 }
 
 struct SSSBTData {
@@ -72,6 +81,14 @@ func get_owner{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     return (token_id=token_data.token_id);
 }
 
+@external
+func setTokenURI{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
+    token_id: Uint256, token_uri: felt
+) {
+    Ownable.assert_only_owner();
+    ERC721._set_token_uri(token_id, token_uri);
+    return ();
+}
 @external
 func transfer{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa_ptr: SignatureBuiltin*
