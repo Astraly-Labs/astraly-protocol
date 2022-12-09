@@ -89,6 +89,9 @@ async def test_create_SBT(contracts_factory, contract_defs):
     LINK_token_address = "0x326C977E6efc84E512bB9C30f76E30c160eD06FB"
     block_number = 1
     min_balance = 1
+    token_uri = []
+    token_uri.append(str_to_felt('ipfs://QmYcWYk4SV4kfo2j5UCXkd9L'))
+    token_uri.append( str_to_felt("5iQurfvKtAWGRqoEtx9DRC"))
     state_root = pack_intarray(
         '0x1dc1f3f9a5764b362d5c5fe2568807d5ff74c832e3319d7410e3f2309b4c2f2b')
     await prover.send_transaction(prover_account, mock_L1_headers_store_cached.contract_address, "set_state_root",
@@ -97,7 +100,7 @@ async def test_create_SBT(contracts_factory, contract_defs):
     create_sbt_transaction_receipt = await prover.send_transaction(prover_account,
                                                                    sbt_contract_factory.contract_address,
                                                                    "createSBTContract",
-                                                                   [block_number, min_balance, int(LINK_token_address, 16)])
+                                                                   [block_number, min_balance, int(LINK_token_address, 16),len(token_uri),*token_uri])
 
     balance_proof_badge_contract = StarknetContract(starknet_state, balance_proof_badge_def.abi,
                                                     create_sbt_transaction_receipt.call_info.internal_calls[0].retdata[0], None)

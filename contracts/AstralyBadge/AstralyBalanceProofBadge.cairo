@@ -21,9 +21,10 @@ from contracts.lib.verify_proof import (
     hash_eip191_message,
     recover_address,
 )
-from openzeppelin.token.erc721.library import ERC721
+from immutablex.starknet.token.erc721.library import ERC721
 
 from contracts.AstralyBadge.AstralyBalanceSBTContractFactory import IAstralySBTContractFactory
+from immutablex.starknet.token.erc721_token_metadata.library import ERC721_Token_Metadata
 
 @contract_interface
 namespace IL1HeadersStore {
@@ -59,7 +60,12 @@ func _state_root() -> (keccak: Keccak256Hash) {
 
 @constructor
 func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    _block_number: felt, _balance: felt, _token_address: felt, _fossil_fact_registry_address: felt
+    _block_number: felt,
+    _balance: felt,
+    _token_address: felt,
+    _token_uri_len: felt,
+    _token_uri: felt*,
+    _fossil_fact_registry_address: felt,
 ) {
     let (headers_store_address) = IFactRegistry.get_l1_headers_store_addr(
         _fossil_fact_registry_address
@@ -81,8 +87,10 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     min_balance.write(_balance);
     assert_eth_address_range(_token_address);
     token_address.write(_token_address);
-
+    let (token_id: Uint256) = _felt_to_uint(1);
     ERC721.initializer('AstralyBalanceProofBadge', 'A-BPB');
+    ERC721_Token_Metadata.initializer();
+    ERC721_Token_Metadata.set_token_uri(token_id, _token_uri_len, _token_uri);
     return ();
 }
 
@@ -262,5 +270,15 @@ func felt_to_int_array{range_check_ptr}(a: felt) -> (res: felt*) {
     assert res[1] = r2;
     assert res[2] = r1;
     assert res[3] = r0;
+    return (res,);
+}
+
+func _felt_to_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    value: felt
+) -> (value: Uint256) {
+    let (high, low) = split_felt(value);
+    tempvar res: Uint256;
+    res.high = high;
+    res.low = low;
     return (res,);
 }

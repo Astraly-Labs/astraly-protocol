@@ -24,9 +24,9 @@ func SBT_badge_class_hash() -> (hash: felt) {
 }
 
 @storage_var
-func deployed_badge_contracts_address(
-    token_address: felt, block_number: felt, balance: felt, token_uri: felt
-) -> (address: felt) {
+func deployed_badge_contracts_address(token_address: felt, block_number: felt, balance: felt) -> (
+    address: felt
+) {
 }
 @storage_var
 func badge_contracts(address: felt) -> (deployed: felt) {
@@ -38,7 +38,7 @@ func fossil_facts_registry_address() -> (address: felt) {
 
 @event
 func SBTContractCreated(
-    contract_address: felt, block_number: felt, balance: felt, token_address: felt, token_uri: felt
+    contract_address: felt, block_number: felt, balance: felt, token_address: felt
 ) {
 }
 
@@ -107,12 +107,12 @@ func setSBTBadgeClassHash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
 // token_address can be 0 in case of eth
 @external
 func createSBTContract{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    block_number: felt, balance: felt, token_address: felt, token_uri: felt
+    block_number: felt, balance: felt, token_address: felt, tokenURI_len: felt, tokenURI: felt*
 ) -> (new_SBT_badge_contract_address: felt) {
     AstralyAccessControl.assert_only_owner();
 
     let (already_deployed: felt) = deployed_badge_contracts_address.read(
-        token_address, block_number, balance, token_uri
+        token_address, block_number, balance
     );
     with_attr error_message("Already deployed") {
         assert already_deployed = FALSE;
@@ -126,16 +126,14 @@ func createSBTContract{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     let (new_SBT_badge_contract_address: felt) = deploy(
         class_hash=class_hash,
         contract_address_salt=salt,
-        constructor_calldata_size=5,
-        constructor_calldata=cast(new (block_number, balance, token_address, token_uri, facts_registry_address), felt*),
+        constructor_calldata_size=6,
+        constructor_calldata=cast(new (block_number, balance, token_address, 2, tokenURI, facts_registry_address), felt*),
         deploy_from_zero=0,
     );
     deployed_badge_contracts_address.write(
-        token_address, block_number, balance, token_uri, new_SBT_badge_contract_address
+        token_address, block_number, balance, new_SBT_badge_contract_address
     );
     badge_contracts.write(new_SBT_badge_contract_address, TRUE);
-    SBTContractCreated.emit(
-        new_SBT_badge_contract_address, block_number, balance, token_address, token_uri
-    );
+    SBTContractCreated.emit(new_SBT_badge_contract_address, block_number, balance, token_address);
     return (new_SBT_badge_contract_address,);
 }
