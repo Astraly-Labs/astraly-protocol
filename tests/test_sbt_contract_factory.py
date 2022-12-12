@@ -90,8 +90,9 @@ async def test_create_SBT(contracts_factory, contract_defs):
     block_number = 1
     min_balance = 1
     token_uri = []
-    token_uri.append(str_to_felt('ipfs://QmYcWYk4SV4kfo2j5UCXkd9L'))
-    token_uri.append( str_to_felt("5iQurfvKtAWGRqoEtx9DRC"))
+    # ipfs://QmYcWYk4SV4kfo2j5UCXkd9L5iQurfvKtAWGRqoEtx9DRC
+    token_uri.append(str_to_felt('ipfs://'))
+    token_uri.append( str_to_felt("5iQu"))
     state_root = pack_intarray(
         '0x1dc1f3f9a5764b362d5c5fe2568807d5ff74c832e3319d7410e3f2309b4c2f2b')
     await prover.send_transaction(prover_account, mock_L1_headers_store_cached.contract_address, "set_state_root",

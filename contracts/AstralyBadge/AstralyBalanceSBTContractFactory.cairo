@@ -5,6 +5,8 @@ from starkware.cairo.common.math import assert_not_zero
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.starknet.common.syscalls import deploy, get_contract_address
+from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.memcpy import memcpy
 
 from openzeppelin.security.initializable.library import Initializable
 
@@ -109,6 +111,7 @@ func setSBTBadgeClassHash{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_
 func createSBTContract{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     block_number: felt, balance: felt, token_address: felt, tokenURI_len: felt, tokenURI: felt*
 ) -> (new_SBT_badge_contract_address: felt) {
+    alloc_locals;
     AstralyAccessControl.assert_only_owner();
 
     let (already_deployed: felt) = deployed_badge_contracts_address.read(
@@ -122,12 +125,18 @@ func createSBTContract{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     let (class_hash: felt) = SBT_badge_class_hash.read();
     let (salt: felt) = get_contract_address();
     let (facts_registry_address: felt) = fossil_facts_registry_address.read();
-
+    let (calldata: felt*) = alloc();
+    assert calldata[0] = block_number;
+    assert calldata[1] = balance;
+    assert calldata[2] = token_address;
+    assert calldata[3] = tokenURI_len;
+    memcpy(calldata + 4, tokenURI, tokenURI_len);
+    assert calldata[4 + tokenURI_len] = facts_registry_address;
     let (new_SBT_badge_contract_address: felt) = deploy(
         class_hash=class_hash,
         contract_address_salt=salt,
-        constructor_calldata_size=6,
-        constructor_calldata=cast(new (block_number, balance, token_address, 2, tokenURI, facts_registry_address), felt*),
+        constructor_calldata_size=5,
+        constructor_calldata=calldata,
         deploy_from_zero=0,
     );
     deployed_badge_contracts_address.write(
