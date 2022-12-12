@@ -7,11 +7,15 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.starknet.common.syscalls import deploy, get_contract_address
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.memcpy import memcpy
+from starkware.cairo.common.math import split_felt
 
 from openzeppelin.security.initializable.library import Initializable
 
 from contracts.AstralyAccessControl import AstralyAccessControl
 
+from immutablex.starknet.token.erc721_token_metadata.interfaces.IERC721_Token_Metadata import (
+    IERC721_Token_Metadata,
+)
 @contract_interface
 namespace IAstralySBTContractFactory {
     func getFossilFactsRegistryAddress() -> (address: felt) {
@@ -122,6 +126,7 @@ func createSBTContract{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     }
 
     assert_not_zero(block_number);
+    let (token_id: Uint256) = _felt_to_uint(1);
     let (class_hash: felt) = SBT_badge_class_hash.read();
     let (salt: felt) = get_contract_address();
     let (facts_registry_address: felt) = fossil_facts_registry_address.read();
@@ -135,9 +140,13 @@ func createSBTContract{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     let (new_SBT_badge_contract_address: felt) = deploy(
         class_hash=class_hash,
         contract_address_salt=salt,
-        constructor_calldata_size=5,
+        constructor_calldata_size=5 + tokenURI_len,
         constructor_calldata=calldata,
         deploy_from_zero=0,
+    );
+    %{ print(ids.new_SBT_badge_contract_address) %}
+    IERC721_Token_Metadata.setTokenURI(
+        new_SBT_badge_contract_address, token_id, tokenURI_len, tokenURI
     );
     deployed_badge_contracts_address.write(
         token_address, block_number, balance, new_SBT_badge_contract_address
@@ -145,4 +154,13 @@ func createSBTContract{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     badge_contracts.write(new_SBT_badge_contract_address, TRUE);
     SBTContractCreated.emit(new_SBT_badge_contract_address, block_number, balance, token_address);
     return (new_SBT_badge_contract_address,);
+}
+func _felt_to_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    value: felt
+) -> (value: Uint256) {
+    let (high, low) = split_felt(value);
+    tempvar res: Uint256;
+    res.high = high;
+    res.low = low;
+    return (res,);
 }

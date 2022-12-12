@@ -9,7 +9,6 @@ from starkware.cairo.common.math import assert_not_zero, split_felt
 from starkware.starknet.common.syscalls import get_caller_address
 from starkware.starknet.common.eth_utils import assert_eth_address_range
 
-from contracts.AstralyBadge.base_SBT import name, symbol, balanceOf, ownerOf, transfer
 from contracts.lib.secp.bigint import BigInt3
 from contracts.lib.bytes_utils import IntArray
 from lib.herodotus_eth_starknet.src.types import Keccak256Hash
@@ -33,8 +32,8 @@ namespace IL1HeadersStore {
 }
 
 @contract_interface
-namespace IFactRegistry {
-    func get_l1_headers_store_addr() -> (res: felt) {
+namespace IFactsRegistry {
+    func get_L1_headers_store_addr() -> (res: felt) {
     }
 }
 
@@ -67,7 +66,7 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     _token_uri: felt*,
     _fossil_fact_registry_address: felt,
 ) {
-    let (headers_store_address) = IFactRegistry.get_l1_headers_store_addr(
+    let (headers_store_address) = IFactsRegistry.get_L1_headers_store_addr(
         _fossil_fact_registry_address
     );
 
@@ -82,15 +81,12 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
             fossil_stored_state_root.word_4;
         assert_not_zero(sum);
     }
-
     block_number.write(_block_number);
     min_balance.write(_balance);
     assert_eth_address_range(_token_address);
     token_address.write(_token_address);
-    let (token_id: Uint256) = _felt_to_uint(1);
     ERC721.initializer('AstralyBalanceProofBadge', 'A-BPB');
     ERC721_Token_Metadata.initializer();
-    ERC721_Token_Metadata.set_token_uri(token_id, _token_uri_len, _token_uri);
     return ();
 }
 
@@ -270,15 +266,5 @@ func felt_to_int_array{range_check_ptr}(a: felt) -> (res: felt*) {
     assert res[1] = r2;
     assert res[2] = r1;
     assert res[3] = r0;
-    return (res,);
-}
-
-func _felt_to_uint{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    value: felt
-) -> (value: Uint256) {
-    let (high, low) = split_felt(value);
-    tempvar res: Uint256;
-    res.high = high;
-    res.low = low;
     return (res,);
 }
