@@ -1,0 +1,9 @@
+name: Thoth Analysis
+on: [push]
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: thoth-action
+        uses: EvolveArt/thoth-action@v0.1.0
